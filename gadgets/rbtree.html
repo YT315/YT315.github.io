@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+   <meta charset="UTF-8">
+   <meta name='viewport' content='width=device-width'>
+   <title>红黑树演示</title>
+   <style>
+      /* transition: all 0.5s linear; */
+      .text {
+         text-align: center;
+         color: white;
+         transition-property: x, y;
+         transition-duration: 0.5s, 0.5s;
+         transition-timing-function: linear, linear;
+         font-weight: bold;
+         width: 80px;
+         height: 80px;
+         font-size: 40px;
+         line-height: 80px;
+      }
+
+      circle {
+         transition-property: cx, cy;
+         transition-duration: 0.5s, 0.5s;
+         transition-timing-function: linear, linear;
+      }
+
+      path {
+         transition: all 0.5s linear;
+      }
+
+      svg {
+         transition: all 0.5s linear;
+      }
+
+      /* 界面 */
+      html,
+      body,
+      .wp {
+         margin: 0;
+         padding: 0;
+         border: none;
+         height: 100%;
+         width: 100%;
+      }
+
+      .fix-box {
+         /* display: none; */
+         position: fixed;
+         border-radius: 10px 10px 0 0;
+         width: 100%;
+         bottom: 0;
+         font-size: 12px;
+         background-image: linear-gradient(#1fa2ff, #12d8fa, #a6ffcb);
+      }
+
+      .input-box {
+         padding: 20px;
+         display: flex;
+         justify-content: center;
+         align-items: center;
+      }
+
+
+      .input-box button {
+         margin: 0 5px;
+         font-size: 12px;
+         border-radius: 5px;
+         padding: 5px 10px;
+         border: none;
+      }
+
+      .input-box label:hover,
+      .input-box button:hover {
+         cursor: pointer;
+      }
+
+      .input-box button:hover {
+         box-shadow: 5px 5px 10px #666;
+
+      }
+
+      .github-corner:hover .octo-arm {
+         animation: octocat-wave 560ms ease-in-out
+      }
+
+      @keyframes octocat-wave {
+
+         0%,
+         100% {
+            transform: rotate(0)
+         }
+
+         20%,
+         60% {
+            transform: rotate(-25deg)
+         }
+
+         40%,
+         80% {
+            transform: rotate(10deg)
+         }
+      }
+
+      @media (max-width:500px) {
+         .github-corner:hover .octo-arm {
+            animation: none
+         }
+
+         .github-corner .octo-arm {
+            animation: octocat-wave 560ms ease-in-out
+         }
+      }
+   </style>
+</head>
+
+<body>
+   <div class="wp">
+      <a href="https://github.com/YT315" class="github-corner" aria-label="View source on GitHub">
+         <svg width="80" height="80" viewBox="0 0 250 250"
+            style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
+            <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+            <path
+               d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
+               fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm">
+            </path>
+            <path
+               d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z"
+               fill="currentColor" class="octo-body">
+            </path>
+         </svg>
+      </a>
+      <svg id="treeCanvas" xmlns="http://www.w3.org/2000/svg" version="1.1" height="99vh" width="100vw"
+         viewBox="-1000,0,1000,1000">
+      </svg>
+      <div class="fix-box">
+         <!-- 操作板 -->
+         <div class="input-box">
+            <input id="input" type="number" placeholder="请输入节点值" value="3" />
+            <input type="checkbox" name="是否自增" id="autoAdd" checked="true">
+            <label for="autoAdd">是否自增</label>
+            </input>
+            <button id="add">新增</button>
+            <button id="delete">删除</button>
+            <button id="find">检测</button>
+            <button id="clean">清空</button>
+            <input type="checkbox" name="展示查询过程" id="showSearch">
+            <label for="showSearch">展示查询过程</label>
+            </input>
+         </div>
+      </div>
+   </div>
+   <script>
+      //只读变量
+      const rootPos = { x: 0, y: 80 }//根节点位置
+      const levelHigh = 160//节点层高
+      const columnWight = 100//节点最小间宽
+      const canvasDom = document.getElementById("treeCanvas")
+      const inputDom = document.getElementById("input")
+      const autoAddDom = document.getElementById("autoAdd")
+      const showSearchDom = document.getElementById("showSearch")
+      document.getElementById("add").onclick = addClick
+      document.getElementById("delete").onclick = deleteClick
+      document.getElementById("find").onclick = findClick
+      document.getElementById("clean").onclick = cleanClick
+      //全局变量
+      let rootNode = null//根节点
+      let Maxlevel = 0;//当前最深的节点层
+      main()
+      //初始化画布大小以及缩放事件
+      function InitCanvas() {
+         //获取窗口宽度
+         let Scale = document.documentElement.clientHeight / document.documentElement.clientWidth;
+         let windowsWidth = document.documentElement.clientWidth
+         let viewWidth = 4000
+         canvasDom.setAttribute("viewBox", -(viewWidth / 2) + ",0," + viewWidth + "," + viewWidth * Scale)
+         document.oncontextmenu = function () {
+            return false;
+         }
+         canvasDom.onmousemove = function (e) {
+            if (e.buttons == 1) {
+               let vbs = canvasDom.getAttribute("viewBox").split(",")
+               let zoom = viewWidth / windowsWidth
+               let x = Number(vbs[0]) - (e.movementX * zoom)
+               let y = Number(vbs[1]) - (e.movementY * zoom)
+               canvasDom.setAttribute("viewBox", x + "," + y + "," + viewWidth + "," + viewWidth * Scale)
+            }
+            return false
+         }
+         canvasDom.onwheel = function (e) {
+            let newWidth = viewWidth + (e.deltaY > 0 ? 100 : -100)
+            if (newWidth <= 0) return
+            let wheelZoom = newWidth / viewWidth
+            let windowsZoom = viewWidth / windowsWidth
+            let centX = windowsZoom * e.clientX
+            let centY = windowsZoom * e.clientY
+
+            let offsetx = centX - centX * wheelZoom
+            let offsety = centY - centY * wheelZoom
+
+            let vbs = canvasDom.getAttribute("viewBox").split(",")
+            let x = Number(vbs[0]) + offsetx
+            let y = Number(vbs[1]) + offsety
+            viewWidth = newWidth
+            canvasDom.setAttribute("viewBox", x + "," + y + "," + viewWidth + "," + viewWidth * Scale)
+         }
+      }
+      //日志打印
+      function Log(...t) {
+         alert(t.join())
+         console.log(t.join())
+      }
+      //刷新所有节点的层和列,返回最大深度
+      function RefreshLevel() {
+         let level = 0
+         //遍历树,计算树的层数,以及行数开始处,返回一共的高度
+         function rangs(node, lev, col) {
+            if (node == null) { return }
+            rangs(node.left, lev + 1, 2 * col - 1)
+            if (lev > level) { level = lev }
+            node.level = lev
+            node.column = col
+            rangs(node.right, lev + 1, 2 * col)
+         }
+         rangs(rootNode, 1, 1)
+         return level
+      }
+      //输入层号和列号,获取对应的坐标
+      function GetPositon(lev, col) {
+         let cc = Math.pow(2, lev - 1);
+         let cw = Math.pow(2, (Maxlevel + 2 - lev)) * columnWight;
+         let mid = cc / 2 + 0.5//计算中间点
+         return {
+            x: ((col - mid) * cw) + rootPos.x,
+            y: (lev - 1) * levelHigh + rootPos.y
+         }
+      }
+      //节点点击事件
+      function nodeClick(e) {
+         Log("点击节点:", e.value)
+      }
+      //链式方法,方便设置dom属性和字段
+      function Chain(ele) {
+         let closeTemp = { source: ele }
+         closeTemp.attr = (k, v) => {
+            ele.setAttribute(k, v)
+            return closeTemp
+         }
+         closeTemp.field = (k, v) => {
+            ele[k] = v
+            return closeTemp
+         }
+         return closeTemp
+      }
+      //创建svg元素
+      function createSvgEle(type) {
+         return document.createElementNS("http://www.w3.org/2000/svg", type)
+      }
+      //初始化节点的图形
+      function InitNodeElement(node, pos, lpos, rpos) {
+         node.element = {}
+         //创建圆
+         node.element.circle = createSvgEle("circle")
+         canvasDom.appendChild(
+            Chain(node.element.circle)
+               .attr("cx", pos.x)
+               .attr("cy", pos.y)
+               .attr("r", 40)
+               .attr("stroke-width", 0)
+               .attr("stroke", "#0000FF")
+               .attr("fill", node.color)
+               .source)
+         //创建文字
+         node.element.text = createSvgEle("foreignObject")
+         canvasDom.appendChild(
+            Chain(node.element.text)
+               .attr("class", "text")
+               .attr("x", pos.x - 40)
+               .attr("y", pos.y - 40)
+               .field("textContent", node.value)
+               .field("onclick", () => { nodeClick(node) })
+               .source)
+
+         //创建左右空叶子节点
+         if (node.left == null) {
+            node.element.lleaf = createSvgEle("circle")
+            canvasDom.appendChild(
+               Chain(node.element.lleaf)
+                  .attr("cx", lpos.x)
+                  .attr("cy", lpos.y)
+                  .attr("r", 40)
+                  .attr("fill", "black")
+                  .source)
+            node.element.ltext = createSvgEle("foreignObject")
+            canvasDom.appendChild(
+               Chain(node.element.ltext)
+                  .attr("class", "text")
+                  .attr("x", lpos.x - 40)
+                  .attr("y", lpos.y - 40)
+                  .field("textContent", "null")
+                  .source)
+         }
+         if (node.right == null) {
+            node.element.rleaf = createSvgEle("circle")
+            canvasDom.appendChild(
+               Chain(node.element.rleaf)
+                  .attr("cx", rpos.x)
+                  .attr("cy", rpos.y)
+                  .attr("r", 40)
+                  .attr("fill", "black")
+                  .source)
+            node.element.rtext = createSvgEle("foreignObject")
+            canvasDom.appendChild(
+               Chain(node.element.rtext)
+                  .attr("class", "text")
+                  .attr("x", rpos.x - 40)
+                  .attr("y", rpos.y - 40)
+                  .field("textContent", "null")
+                  .source)
+         }
+         //创建左右线
+         let firstNode = canvasDom.firstChild//线要添加到前面,否则线就会显示在园上面
+         node.element.linl = createSvgEle("path")
+         node.element.linr = createSvgEle("path")
+         canvasDom.insertBefore(
+            Chain(node.element.linl)
+               .attr("stroke-width", 2)
+               .attr("stroke", "black")
+               .attr("d", "M" + pos.x + "," + pos.y + "L" + lpos.x + "," + lpos.y)
+               .source, firstNode)
+
+         canvasDom.insertBefore(
+            Chain(node.element.linr)
+               .attr("stroke-width", 2)
+               .attr("stroke", "black")
+               .attr("d", "M" + pos.x + "," + pos.y + "L" + rpos.x + "," + rpos.y)
+               .source, firstNode)
+      }
+      //删除节点的图形
+      function DeleteNodeElement(node) {
+         if (node.element != null) {
+            canvasDom.removeChild(node.element.circle)
+            canvasDom.removeChild(node.element.text)
+            canvasDom.removeChild(node.element.linl)
+            canvasDom.removeChild(node.element.linr)
+            canvasDom.removeChild(node.element.lleaf)
+            canvasDom.removeChild(node.element.ltext)
+            canvasDom.removeChild(node.element.rleaf)
+            canvasDom.removeChild(node.element.rtext)
+         }
+      }
+      //刷新节点的位置
+      function RefreshPosition(node) {
+         let pos = GetPositon(node.level, node.column)
+         let lpos = GetPositon(node.level + 1, node.column * 2 - 1)
+         let rpos = GetPositon(node.level + 1, node.column * 2)
+         if (node.element == null) {
+
+            InitNodeElement(node, pos, lpos, rpos)
+         }
+         else {
+            if (node.left == null) {
+               node.element.lleaf.setAttribute("visibility", "visible")
+               node.element.ltext.setAttribute("visibility", "visible")
+            } else {
+               node.element.lleaf.setAttribute("visibility", "hidden")
+               node.element.ltext.setAttribute("visibility", "hidden")
+            }
+
+            if (node.right == null) {
+               node.element.rleaf.setAttribute("visibility", "visible")
+               node.element.rtext.setAttribute("visibility", "visible")
+            } else {
+               node.element.rleaf.setAttribute("visibility", "hidden")
+               node.element.rtext.setAttribute("visibility", "hidden")
+            }
+            Chain(node.element.circle).attr("cx", pos.x).attr("cy", pos.y)
+            Chain(node.element.text).attr("x", pos.x - 40).attr("y", pos.y - 40)
+            node.element.linl.setAttribute("d", "M" + pos.x + "," + pos.y + "L" + lpos.x + "," + lpos.y)
+            node.element.linr.setAttribute("d", "M" + pos.x + "," + pos.y + "L" + rpos.x + "," + rpos.y)
+            Chain(node.element.lleaf).attr("cx", lpos.x).attr("cy", lpos.y)
+            Chain(node.element.ltext).attr("x", lpos.x - 40).attr("y", lpos.y - 40)
+            Chain(node.element.rleaf).attr("cx", rpos.x).attr("cy", rpos.y)
+            Chain(node.element.rtext).attr("x", rpos.x - 40).attr("y", rpos.y - 40)
+         }
+      }
+      //刷新所有节点位置
+      function RefreshAllPosition() {
+         //计算层数
+         let levelNumber = RefreshLevel(rootNode)
+         if (levelNumber == 0) return
+         if (Maxlevel != levelNumber) Maxlevel = levelNumber
+         //遍历
+         function rangs(node) {
+            if (node == null) { return }
+            RefreshPosition(node)
+            rangs(node.left)
+            rangs(node.right)
+         }
+         rangs(rootNode)
+      }
+      //插入一个节点
+      function insertNode(value, color, parent, isLeft) {
+         let temp = {
+            parent: parent,
+            left: null,
+            right: null,
+            value: value,
+            color: color,
+            isRed: color == "red",
+         }
+         temp.toString = () => {
+            return temp.value + "--" + temp.color
+         }
+         temp.setHighLight = () => {
+            temp.element.circle.setAttribute("stroke-width", 10)
+         }
+         temp.clearHighLight = () => {
+            temp.element.circle.setAttribute("stroke-width", 0)
+         }
+         temp.setColor = (clr) => {
+            temp.color = clr
+            temp.isRed = (clr == "red")
+            temp.element.circle.setAttribute("fill", clr)
+         }
+         temp.setValue = (val) => {
+            temp.value = val
+            temp.element.text.textContent = val
+         }
+
+
+         //根节点
+         if (parent == null) {
+            rootNode = temp
+            temp.level = 1
+            temp.column = 1
+         } else if (isLeft) {
+            parent.left = temp
+            temp.level = parent.level + 1
+            temp.column = parent.column * 2 - 1
+         } else {
+            parent.right = temp
+            temp.level = parent.level + 1
+            temp.column = parent.column * 2
+         }
+         RefreshPosition(temp)
+         return temp
+      }
+      //删除一个节点
+      function deleteNode(node) {
+         if (node.left != null || node.right != null) {
+            Log(node.value, "不是最下层节点")
+            return
+         }
+         //根节点
+         if (node.parent != null) {
+            if (node.parent.left == node) {
+               node.parent.left = null
+            } else {
+               node.parent.right = null
+            }
+         }
+         DeleteNodeElement(node)
+         RefreshAllPosition()
+      }
+      //左旋
+      function rightRotate(node) {
+         let newNode = node.left
+         if (newNode == null) return
+         //移交弟弟
+         node.left = newNode.right
+         if (newNode.right != null) {
+            newNode.right.parent = node
+         }
+         //移交父亲
+         newNode.parent = node.parent
+         if (node.parent != null) {
+            if (node.parent.left == node) node.parent.left = newNode
+            else if (node.parent.right == node) node.parent.right = newNode
+         }
+         //相互关系
+         newNode.right = node
+         node.parent = newNode
+         if (newNode.parent == null) rootNode = newNode
+         RefreshAllPosition()
+      }
+      //右旋
+      function leftRotate(node) {
+         let newNode = node.right
+         if (newNode == null) return
+         //移交弟弟
+         node.right = newNode.left
+         if (newNode.left != null) {
+            newNode.left.parent = node
+         }
+         //移交父亲
+         newNode.parent = node.parent
+         if (node.parent != null) {
+            if (node.parent.left == node) node.parent.left = newNode
+            else if (node.parent.right == node) node.parent.right = newNode
+         }
+         //相互关系
+         newNode.left = node
+         node.parent = newNode
+         if (newNode.parent == null) rootNode = newNode
+         RefreshAllPosition()
+      }
+      //用户操作事件
+      async function addClick(e) {
+         e.target.disabled = true
+         let value = Number(inputDom.value)
+         await insertValue(value)
+         if (autoAddDom.checked) {
+            inputDom.value = value + 1
+         }
+         e.target.disabled = false
+      }
+      async function deleteClick(e) {
+         e.target.disabled = true
+         let value = Number(inputDom.value)
+         await deleteValue(value)
+         if (autoAddDom.checked) {
+            inputDom.value = value + 1
+         }
+         e.target.disabled = false
+      }
+      async function findClick(e) {
+         let value = Number(inputDom.value)
+         let res = await findValue(value)
+         if (res?.value == value) {
+            Log("存在节点:" + value)
+
+         } else if (res != null) {
+            Log("未找到节点:" + value)
+         }
+      }
+      function cleanClick(e) {
+         while (canvasDom.firstChild) {
+            canvasDom.removeChild(canvasDom.firstChild)
+         }
+         InitCanvas()
+         rootNode = null
+         Maxlevel = 0
+      }
+      //主函数
+      function main() {
+         //初始化画布
+         InitCanvas()
+         //添加初始节点
+         let levNodes = insertNode(1, "black")
+         insertNode(0, "red", levNodes, true)
+         insertNode(2, "red", levNodes, false)
+         RefreshAllPosition()
+
+      }
+      //异步睡眠
+      function delay(time) {
+         return new Promise(resolve => setTimeout(resolve, time))
+      }
+      //高亮某个节点
+      async function HighlightDelay(node, time = 300) {
+         if (showSearchDom.checked) {
+            node.setHighLight()
+            await delay(time)
+            node.clearHighLight()
+         }
+      }
+      //-------------------------------------------------------------------------------------------------------
+      //#region 红黑树算法部分
+      //-------------------------------------------------------------------------------------------------------
+      //查找某个值,返回对应值,如果没找到就返回其父节点
+      async function findValue(val) {
+         if (val == null) {
+            Log("值为空")
+            return
+         }
+         if (rootNode == null) {
+            Log("树为空")
+            return
+         } else {
+            let isFinish = false
+            let currentNode = rootNode
+            for (; ;) {
+               await HighlightDelay(currentNode)
+               if (val == currentNode.value) {
+                  return currentNode
+               } else if (val > currentNode.value) {
+                  if (currentNode.right != null) currentNode = currentNode.right
+                  else {
+                     return currentNode
+                  }
+               } else {
+                  if (currentNode.left != null) currentNode = currentNode.left
+                  else {
+                     return currentNode
+                  }
+               }
+
+            }
+         }
+      }
+      async function insertValue(val) {
+         if (val == null) {
+            Log("值为空")
+            return
+         }
+         if (rootNode == null) {
+            rootNode = insertNode(val, "black", null, false)
+         } else {
+            let currentNode = await findValue(val)
+            if (currentNode.value == val) {
+               Log(val + "节点已经存在")
+               return
+            }
+            if (val > currentNode.value) {
+               currentNode = insertNode(val, "red", currentNode, false)
+            } else {
+               currentNode = insertNode(val, "red", currentNode, true)
+            }
+            setTimeout(() => { afterAdd(currentNode) }, 1)
+         }
+
+      }
+      function afterAdd(node) {
+         let currentNode
+         do {
+            currentNode = node;
+            if (node.parent == null) {//添加到根节点，或者上溢到根节点
+               rootNode = node
+               node?.setColor("black")
+            } else {//非根节点
+               if (node.parent.isRed) {//parent 是红色
+                  let grand = node.parent.parent;
+                  let parent = node.parent;
+                  let isLeft = (grand.left == parent)
+                  let uncle = isLeft ? grand.right : grand.left
+
+                  if (uncle == null || !uncle.isRed) {
+                     if (isLeft) {
+                        if (node == parent.left) {
+                           parent?.setColor("black")
+                           grand?.setColor("red")
+                           rightRotate(grand)
+                           break
+                        } else {
+                           leftRotate(parent)
+                           node = parent
+                        }
+                     } else {
+                        if (node == parent.right) {
+                           parent?.setColor("black")
+                           grand?.setColor("red")
+                           leftRotate(grand)
+                           break
+                        } else {
+                           rightRotate(parent)
+                           node = parent
+                        }
+                     }
+                  } else {//叔父节点红色
+                     grand?.setColor("red")
+                     parent?.setColor("black")
+                     uncle?.setColor("black")
+                     node = grand;
+                  }
+               } else {//parent 是黑色
+                  //直接添加，不用调整修复。就满足了红黑树的性质
+               }
+            }
+         } while (currentNode != node);
+      }
+      async function deleteValue(val) {
+         let valNode = await findValue(val)
+         //找到节点了
+         if (valNode?.value == val) {
+            //左右都有子节点,寻找后继
+            if (valNode.left != null && valNode.right != null) {
+               let nValNode = valNode.right
+               while (nValNode.left != null) {
+                  nValNode = nValNode.left
+               }
+               valNode.setValue(nValNode.value)
+               nValNode.setValue(val)
+               valNode = nValNode
+            }
+            //如果还有一个子节点继续移动
+            if (valNode.left != null) {
+               valNode.setValue(valNode.left.value)
+               valNode = valNode.left
+            } else if (valNode.right != null) {
+               valNode.setValue(valNode.right.value)
+               valNode = valNode.right
+            }
+
+
+            //如果不是红色则修复
+            if (!valNode.isRed) {
+               afterDelete(valNode)
+            }
+            deleteNode(valNode)
+         } else if (valNode != null) {
+            Log("未找到节点", val)
+         }
+
+      }
+      function afterDelete(node) {
+         while (node != rootNode && !node.isRed) {
+            let parent = node.parent;
+            let isLeft = (parent.left == node)
+            let brother = isLeft ? parent.right : parent.left
+            if (isLeft) {
+               if (brother.isRed) {
+                  parent.setColor("red");
+                  brother.setColor("black");
+                  leftRotate(parent)
+                  continue;
+               } else {
+                  if ((brother.left == null || !brother.left.isRed) && (brother.right == null || !brother.right.isRed))//双黑
+                  {
+                     brother.setColor("red")
+                     node = parent
+                     continue;
+                  } else if (brother.left?.isRed && (brother.right == null || !brother.right.isRed))//红黑
+                  {
+                     brother.left.setColor("black")
+                     brother.setColor("red")
+                     rightRotate(brother)
+                     continue;
+                  } else if (brother.right?.isRed) {
+                     brother.setColor(parent.color)
+                     parent.setColor("black")
+                     brother.right.setColor("black")
+                     leftRotate(parent)
+                     node = rootNode
+                  }
+               }
+            } else {
+               if (brother.isRed) {
+                  parent.setColor("red");
+                  brother.setColor("black");
+                  rightRotate(parent)
+                  continue;
+               } else {
+                  if ((brother.left == null || !brother.left.isRed) && (brother.right == null || !brother.right.isRed))//双黑
+                  {
+                     brother.setColor("red")
+                     node = parent
+                     continue;
+                  } else if (brother.right?.isRed && (brother.left == null || !brother.left.isRed))//红黑
+                  {
+                     brother.right.setColor("black")
+                     brother.setColor("red")
+                     leftRotate(brother)
+                     continue;
+                  } else if (brother.left?.isRed) {
+                     brother.setColor(parent.color)
+                     parent.setColor("black")
+                     brother.left.setColor("black")
+                     rightRotate(parent)
+                     node = rootNode
+                  }
+               }
+            }
+         }
+         node.setColor("black")
+      }
+      //#endregion
+   </script>
+</body>
+
+</html>
