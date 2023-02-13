@@ -113,10 +113,10 @@
             let tgt = event.target
             let index = selectDoms.indexOf(tgt)
             if (index == data.ans) {
-                tgt.style.color = "green"
+                tgt.style.backgroundColor = "green"
             } else {
-                tgt.style.color = "red"
-                selectDoms[data.ans].style.color = "blue"
+                tgt.style.backgroundColor = "red"
+                selectDoms[data.ans].style.backgroundColor = "blue"
             }
             isNext = true
         }
