@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>口琴点位记忆练习</title>
+    <meta name='viewport' content='width=device-width'>
+    <style type="text/css">
+        /* 界面 */
+        body {
+            padding: 5px;
+        }
+
+        h1 {
+            font-size: 27px;
+            display: inline;
+            position: absolute;
+            top: 13px;
+            left: 144px;
+        }
+
+        #mode {
+            float: right;
+            width: 60px;
+            height: 50px;
+        }
+
+        #pic {
+            width: vw;
+            height: 20%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class=" wp">
+        <span id="question"></span>
+        <h1 id="say"></h1>
+        <button id="mode" onclick="ChangeMode()">基础20音</button>
+        <hr>
+        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0,0,1010,470" id="pic">
+            <!--长 760+200 -->
+            <path fill="#cacb99" stroke="#c8c88d" stroke-width="3"
+                d="M25,160 l0,-3 l 50,0 c 0,-30 20,-50 50,-50 l 760,0 c 30,0 50,20 50,50 l 50,0 l0,3 m -960,50 l0,3 l 50,0 c 0,30 20,50 50,50 l 760,0 c 30,0 50,-20 50,-50 l 50,0 l0,-3">
+            </path>
+            <rect fill="#c46605" x="22" y="163" width="966" height="44"></rect>
+            <text x="35" y="196" font-size="30" stroke="#fff" fill="#fff">C 调</text>
+        </svg>
+    </div>
+
+</body>
+<script type="text/javascript">
+    //#region 常量
+    const pic = document.getElementById("pic")
+    const question = document.getElementById("question")
+    const say = document.getElementById("say")
+    const mode = document.getElementById("mode")
+    const all = [
+        { dis: " l1", say: "低do", pos: [1, 1] },
+        { dis: " l2", say: "低re", pos: [1, -1] },
+        { dis: " l3", say: "低mi", pos: [2, 1] },
+        { dis: " l5", say: "低sol", pos: [2, -1,] },
+        { dis: " l5", say: "低sol", pos: [3, 1] },
+        { dis: " l7", say: "低ti", pos: [3, -1] },
+        { dis: " m1", say: "do", pos: [4, 1] },
+        { dis: " m2", say: "re", pos: [4, -1] },
+        { dis: " m3", say: "mi", pos: [5, 1] },
+        { dis: " m4", say: "fa", pos: [5, -1] },
+        { dis: " m5", say: "sol", pos: [6, 1] },
+        { dis: " m6", say: "la", pos: [6, -1] },
+        { dis: " m7", say: "ti", pos: [7, -1] },
+        { dis: " h1", say: "高do", pos: [7, 1] },
+        { dis: " h2", say: "高re", pos: [8, -1] },
+        { dis: " h3", say: "高mi", pos: [8, 1] },
+        { dis: " h4", say: "高fa", pos: [9, -1] },
+        { dis: " h5", say: "高sol", pos: [9, 1] },
+        { dis: " h6", say: "高la", pos: [10, -1] },
+        { dis: " t1", say: "高高do", pos: [10, 1] },
+        { dis: "#l2", say: "升低re", pos: [1, 2] },
+        { dis: "bl2", say: "降低re", pos: [1, -2] },
+        { dis: "bl5", say: "降低sol", pos: [2, -2] },
+        { dis: " l4", say: "低fa", pos: [2, -3] },
+        { dis: "bl7", say: "降低ti", pos: [3, -2] },
+        { dis: " l6", say: "低la", pos: [3, -3] },
+        { dis: "bl6", say: "降低la", pos: [3, -4] },
+        { dis: "#m2", say: "升re", pos: [4, 2] },
+        { dis: "bm2", say: "降re", pos: [4, -2] },
+        { dis: "#m4", say: "升fa", pos: [5, 2] },
+        { dis: "#m6", say: "升la", pos: [6, 2] },
+        { dis: "bm6", say: "降la", pos: [6, -2] },
+        { dis: "#h1", say: "升高do", pos: [7, -2] },
+        { dis: "bh3", say: "降高mi", pos: [8, 2] },
+        { dis: "bh5", say: "降高sol", pos: [9, 2] },
+        { dis: "#h5", say: "升高sol", pos: [9, -2] },
+        { dis: " h7", say: "高ti", pos: [10, 2] },
+        { dis: "bh7", say: "降高ti", pos: [10, 3] },
+    ]
+    //#endregion
+    //#region 变量
+    let db = all.slice(0, 20)
+    let select = 1//当前选择的
+    let status = ""// memory
+    //#endregion
+    //#region 初始化
+    //添加孔位和数字
+    for (let i = 0; i < 10; i++) {
+        pic.appendChild(Chain(creatshape("rect"))
+            .attr("width", 40)
+            .attr("height", 44)
+            .attr("fill", "#3f3e2c")
+            .attr("x", 125 + i * 80)
+            .attr("y", 163).source)
+        if (i != 9) {
+            pic.appendChild(Chain(creatshape("text"))
+                .attr("x", 136 + i * 80)
+                .attr("y", 196)
+                .attr("font-size", 30)
+                .attr("stroke", "#fff")
+                .attr("fill", "#fff")
+                .field("textContent", i + 1).source)
+        } else {
+            pic.appendChild(Chain(creatshape("text"))
+                .attr("x", 127 + i * 80)
+                .attr("y", 196)
+                .attr("font-size", 30)
+                .attr("stroke", "#fff")
+                .attr("fill", "#fff")
+                .field("textContent", i + 1).source)
+        }
+    }
+    ChangeMode()
+    function ChangeMode() {
+        removeDbDis()
+        if (status == "selectAll") {
+            status = "memory"
+            mode.textContent = "记忆"
+            db = all
+            Render()
+            showStr()
+        }
+        else if (status == "selectBase") {
+            status = "selectAll"
+            mode.textContent = "全部音练习"
+            db = all
+            Render()
+            nextClick()
+        } else {
+            status = "selectBase"
+            mode.textContent = "基础音练习"
+            db = all.slice(0, 20)
+            Render()
+            nextClick()
+        }
+    }
+    //渲染点位
+    function Render() {
+        db.forEach((dt, index) => {
+            let { x, y } = GetPositon(dt.pos)
+            dt.button = Chain(creatshape("rect"))
+                .attr("width", 40)
+                .attr("height", 45)
+                .attr("fill", "#3f3e2c")
+                .attr("x", x)
+                .field("class", "bt")
+                .attr("y", y).source
+            dt.button.onclick = () => { selectClick(index) }
+            pic.appendChild(dt.button)
+            dt.str = Chain(GetDisplay(dt.dis)).attr("x", x).attr("y", y).source
+            pic.appendChild(dt.str)
+        })
+
+    }
+    //x为1-10孔 y正1表示吹 y-1表示吸
+    function GetPositon([x, y]) {
+        return { x: 125 + (x - 1) * 80, y: 163 - y * 53 }
+    }
+    function GetDisplay(name) {
+        let [pos, level, num] = name
+        let svg = Chain(creatshape("svg")).attr("width", 40).attr("height", 45).attr("stroke-width", 0).attr("font-weight", "bold").attr("fill", "#000").source
+        svg.appendChild(
+            Chain(creatshape("text"))
+                .attr("x", 3)
+                .attr("y", 20)
+                .attr("font-size", 15)
+                .field("textContent", pos).source)
+        svg.appendChild(
+            Chain(creatshape("text"))
+                .attr("x", 13)
+                .attr("y", 30)
+                .attr("font-size", 21)
+                .field("textContent", num).source)
+        if (level == 'h' || level == 't')
+            svg.appendChild(
+                Chain(creatshape("text"))
+                    .attr("x", 16)
+                    .attr("y", 11)
+                    .attr("font-size", 30)
+                    .field("textContent", '.').source)
+        if (level == 't')
+            svg.appendChild(
+                Chain(creatshape("text"))
+                    .attr("x", 16)
+                    .attr("y", 5)
+                    .attr("font-size", 30)
+                    .field("textContent", '.').source)
+        if (level == 'l')
+            svg.appendChild(
+                Chain(creatshape("text"))
+                    .attr("x", 16)
+                    .attr("y", 37)
+                    .attr("font-size", 30)
+                    .field("textContent", '.').source)
+        return svg
+    }
+    //#endregion
+    function showStr() {
+        db.forEach(dt => {
+            dt.button.style.display = 'none'
+            dt.str.style.display = ''
+        })
+    }
+    function showBt() {
+        db.forEach(dt => {
+            dt.button.style.display = ''
+            dt.str.style.display = 'none'
+        })
+    }
+    function hideBt() {
+        db.forEach(dt => {
+            dt.button.style.display = 'none'
+            dt.str.style.display = 'none'
+        })
+    }
+
+    function removeDbDis() {
+        db.forEach(dt => {
+            dt.button?.remove()
+            dt.str?.remove()
+        })
+    }
+    //按钮按下
+    function selectClick(index) {
+        hideBt()
+        say.textContent = db[select].say
+        db[select].str.style.fill = "green"
+        if (index == select) {
+            db[index].str.style.display = ''
+            setTimeout(nextClick, 1000)
+        } else {
+            db[index].str.style.fill = "red"
+            db[index].str.style.display = ''
+            db[select].str.style.display = ''
+            setTimeout(nextClick, 2000)
+        }
+    }
+
+    function nextClick() {
+        showBt()
+        say.textContent = ""
+        select = Math.floor(Math.random() * db.length);
+        deleteChild(question)
+        question.appendChild(GetDisplay(db[select].dis))
+    }
+
+
+
+    //#region 基础方法
+    function creatshape(name) {
+        return document.createElementNS("http://www.w3.org/2000/svg", name)
+    }
+    function deleteChild(e) {
+        var first = e.firstElementChild;
+        while (first) {
+            first.remove();
+            first = e.firstElementChild;
+        }
+    }
+
+    //链式方法,方便设置dom属性和字段
+    function Chain(ele) {
+        let closeTemp = { source: ele }
+        closeTemp.attr = (k, v) => {
+            ele.setAttribute(k, v)
+            return closeTemp
+        }
+        closeTemp.field = (k, v) => {
+            ele[k] = v
+            return closeTemp
+        }
+        return closeTemp
+    }
+//#endregion
+</script>
+
+</html>
